@@ -36,6 +36,7 @@ html,
 body {
   height: 100%;
   box-sizing: border-box;
+  font-size: 16px;
 }
 
 body {
@@ -44,6 +45,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--textcolor);
   background-color: var(--background-color);
+}
+
+input[type=checkbox] {
+  vertical-align: middle;
 }
 
 .popup {
@@ -87,9 +92,14 @@ body {
  
 .header-icon {
   flex: 0 0 auto;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.8em;
+  height: 1.8em;
   color: var(--accent-color);
+}
+
+.header-icon svg {
+  width: 1.8em;
+  height: 1.8em;
 }
 
 .icon-text-text {
@@ -100,7 +110,7 @@ body {
 .icon-text-text input {
   flex: 1 1 auto;
   font-size: 0.9em;
-  margin-top: 0.5em;
+  padding: 0.2em;
 }
 
 .header-title {
@@ -213,6 +223,8 @@ input[type="search"]::placeholder {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: auto;
 }
 
 .entries-header {
@@ -436,7 +448,6 @@ input[type="search"]::placeholder {
   display: flex;
   justify-content: space-between;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8em;
 }
 
 .password-generator-button-area {
@@ -523,6 +534,7 @@ button:disabled {
 .compact-button {
   padding: 0.2em 0.4em;
   white-space: nowrap;
+  font-size: 1em;
 }
 
 .compact-button svg {
@@ -597,6 +609,7 @@ code {
 .edit-value input {
   flex: 1 1 auto;
   font-size: 0.8em;
+  padding: 0.2em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -616,7 +629,6 @@ code {
 .hint pre {
   display: inline-block;
   margin: 0;
-  font-size: 1.2em;
 }
 
 .edit-textarea {
