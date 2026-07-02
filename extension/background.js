@@ -47,18 +47,33 @@ async function setBadgeCountForTab(pageURL, tabId) {
         throw new Error(listResponse?.error || "Unable to inspect pass entries for this page.");
     }
 
-    if (listResponse.suggestedEntries) {
+    if (listResponse.suggestedEntries && listResponse.suggestedEntries.length > 0) {
         const count = `${listResponse.suggestedEntries.length}`;
         
         if (typeof browser !== 'undefined' && browser.action) {
             browser.action.setBadgeText({ text: count, tabId: tabId });
-            browser.action.setBadgeBackgroundColor({ color: "#FF0000" }); // Optional: Hintergrundfarbe (z.B. Rot)
+            browser.action.setBadgeBackgroundColor({ color: "#2563eb", tabId: tabId }); // Blue background
+            browser.action.setBadgeTextColor({ color: "#ffffff", tabId: tabId }); // White text
         }
         else if (typeof chrome !== 'undefined' && chrome.action) {
             chrome.action.setBadgeText({ text: count, tabId: tabId });
+            chrome.action.setBadgeBackgroundColor({ color: "#2563eb", tabId: tabId }); // Blue background
+            // Note: Chrome automatically uses white text on dark backgrounds
         }
         else if (typeof browser !== 'undefined' && browser.browserAction) {
             browser.browserAction.setBadgeText({ text: count, tabId: tabId });
+            browser.browserAction.setBadgeBackgroundColor({ color: "#2563eb", tabId: tabId });
+        }
+    } else {
+        // Clear badge if no suggestions
+        if (typeof browser !== 'undefined' && browser.action) {
+            browser.action.setBadgeText({ text: "", tabId: tabId });
+        }
+        else if (typeof chrome !== 'undefined' && chrome.action) {
+            chrome.action.setBadgeText({ text: "", tabId: tabId });
+        }
+        else if (typeof browser !== 'undefined' && browser.browserAction) {
+            browser.browserAction.setBadgeText({ text: "", tabId: tabId });
         }
     }
 }
