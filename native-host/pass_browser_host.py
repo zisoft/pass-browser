@@ -427,7 +427,7 @@ def get_entry_modification_time(entry_name: str) -> float:
         return 0.0
 
 
-def build_url_index() -> Dict[str, List[str]]:
+def build_url_index(current_entries: Optional[List[str]] = None) -> Dict[str, List[str]]:
     """Build URL index from password store entries with intelligent caching"""
     store_path = os.environ.get('PASSWORD_STORE_DIR', DEFAULT_STORE_PATH)
     store_path = os.path.expanduser(store_path)
@@ -436,7 +436,8 @@ def build_url_index() -> Dict[str, List[str]]:
         return {}
     
     # Get current store state
-    current_entries = list_entries()
+    if current_entries is None:
+        current_entries = list_entries()
     current_store_mtime = get_store_modification_time()
     current_time = time.time()
     
@@ -601,8 +602,8 @@ def get_suggestions_for_url(page_url: str, all_entries: List[str]) -> List[str]:
     
     log_message(f"Looking for suggestions for hostname: {hostname}")
     
-    # Try to load URL index
-    url_index = build_url_index()
+    # Build URL index (pass current entries to detect deletions)
+    url_index = build_url_index(all_entries)
     
     # Find entries for this hostname
     suggestions = []
