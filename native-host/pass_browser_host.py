@@ -357,6 +357,37 @@ def extract_hostname(url_string: str) -> Optional[str]:
     return None
 
 
+def is_url_index_refreshing() -> bool:
+    """Check if URL index is currently being refreshed"""
+    return URL_INDEX_LOCK_FILE.exists()
+
+
+def acquire_url_index_lock() -> bool:
+    """Acquire lock for URL index refresh"""
+    try:
+        if URL_INDEX_LOCK_FILE.exists():
+            # Check if lock is stale (older than 5 minutes)
+            lock_age = time.time() - URL_INDEX_LOCK_FILE.stat().st_mtime
+            if lock_age < 300:  # 5 minutes
+                return False
+            # Remove stale lock
+            URL_INDEX_LOCK_FILE.unlink()
+        
+        URL_INDEX_LOCK_FILE.touch()
+        return True
+    except Exception:
+        return False
+
+
+def release_url_index_lock():
+    """Release URL index refresh lock"""
+    try:
+        if URL_INDEX_LOCK_FILE.exists():
+            URL_INDEX_LOCK_FILE.unlink()
+    except Exception:
+        pass
+
+
 def get_store_modification_time() -> float:
     """Get the latest modification time from the password store"""
     store_path = os.environ.get('PASSWORD_STORE_DIR', DEFAULT_STORE_PATH)
@@ -437,98 +468,111 @@ def build_url_index() -> Dict[str, List[str]]:
     if cache_valid and cache:
         return convert_cache_to_hostname_dict(cache)
     
-    # Initialize or load cache structure
-    if not cache:
-        cache = {
-            'storePath': store_path,
-            'entryCount': 0,
-            'latestStoreModificationTime': 0.0,
-            'generatedAt': 0.0,
-            'entries': {}
-        }
+    # Try to acquire lock for updating
+    if not acquire_url_index_lock():
+        log_message("URL index refresh already in progress, using existing cache")
+        # Return what we have (might be outdated but better than nothing)
+        if cache:
+            return convert_cache_to_hostname_dict(cache)
+        return {}
     
-    cache_entries = cache.get('entries', {})
-    
-    # Remove entries from cache that no longer exist
-    entries_to_remove = []
-    for entry_name in cache_entries.keys():
-        if entry_name not in current_entries:
-            entries_to_remove.append(entry_name)
-    
-    for entry_name in entries_to_remove:
-        del cache_entries[entry_name]
-        log_message(f"Removed deleted entry from cache: {entry_name}")
-    
-    # Update or add entries
-    updated_count = 0
-    for entry_name in current_entries:
-        entry_mtime = get_entry_modification_time(entry_name)
-        cached_entry = cache_entries.get(entry_name)
-        
-        # Check if entry needs to be updated
-        needs_update = (
-            cached_entry is None or
-            cached_entry.get('modificationTime', 0) < entry_mtime
-        )
-        
-        if needs_update:
-            try:
-                # Parse entry to extract URLs
-                output = run_pass(["show", entry_name])
-                lines = output.split('\n')
-                
-                urls = []
-                hosts = []
-                
-                # Parse URL fields (skip first line which is the password)
-                for line in lines[1:]:
-                    if ':' not in line:
-                        continue
-                    
-                    parts = line.split(':', 1)
-                    if len(parts) != 2:
-                        continue
-                    
-                    label = parts[0].strip().lower()
-                    value = parts[1].strip()
-                    
-                    # Check if it's a URL field
-                    if any(label.startswith(prefix) for prefix in ['url', 'website', 'site']):
-                        if value:
-                            # Extract hostname
-                            hostname = extract_hostname(value)
-                            if hostname and hostname not in hosts:
-                                hosts.append(hostname)
-                            urls.append(value)
-                
-                # Update cache entry
-                cache_entries[entry_name] = {
-                    'hosts': sorted(hosts),
-                    'urls': sorted(urls),
-                    'modificationTime': entry_mtime
-                }
-                updated_count += 1
-                
-            except Exception as e:
-                log_message(f"Failed to index {entry_name}: {e}")
-                continue
-    
-    # Update cache metadata
-    cache['storePath'] = store_path
-    cache['entryCount'] = len(cache_entries)
-    cache['latestStoreModificationTime'] = current_store_mtime
-    cache['generatedAt'] = current_time
-    cache['entries'] = cache_entries
-    
-    # Save cache
     try:
-        with open(URL_INDEX_CACHE_FILE, 'w') as f:
-            json.dump(cache, f)
-        log_message(f"Updated URL index cache: {updated_count} entries updated, {len(entries_to_remove)} removed")
-    except Exception as e:
-        log_message(f"Failed to save URL index cache: {e}")
+        # Initialize or load cache structure
+        if not cache:
+            cache = {
+                'storePath': store_path,
+                'entryCount': 0,
+                'latestStoreModificationTime': 0.0,
+                'generatedAt': 0.0,
+                'entries': {}
+            }
+        
+        cache_entries = cache.get('entries', {})
+        
+        # Remove entries from cache that no longer exist
+        entries_to_remove = []
+        for entry_name in cache_entries.keys():
+            if entry_name not in current_entries:
+                entries_to_remove.append(entry_name)
+        
+        for entry_name in entries_to_remove:
+            del cache_entries[entry_name]
+            log_message(f"Removed deleted entry from cache: {entry_name}")
+        
+        # Update or add entries
+        updated_count = 0
+        for entry_name in current_entries:
+            entry_mtime = get_entry_modification_time(entry_name)
+            cached_entry = cache_entries.get(entry_name)
+            
+            # Check if entry needs to be updated
+            needs_update = (
+                cached_entry is None or
+                cached_entry.get('modificationTime', 0) < entry_mtime
+            )
+            
+            if needs_update:
+                try:
+                    # Parse entry to extract URLs
+                    output = run_pass(["show", entry_name])
+                    lines = output.split('\n')
+                    
+                    urls = []
+                    hosts = []
+                    
+                    # Parse URL fields (skip first line which is the password)
+                    for line in lines[1:]:
+                        if ':' not in line:
+                            continue
+                        
+                        parts = line.split(':', 1)
+                        if len(parts) != 2:
+                            continue
+                        
+                        label = parts[0].strip().lower()
+                        value = parts[1].strip()
+                        
+                        # Check if it's a URL field
+                        if any(label.startswith(prefix) for prefix in ['url', 'website', 'site']):
+                            if value:
+                                # Extract hostname
+                                hostname = extract_hostname(value)
+                                if hostname and hostname not in hosts:
+                                    hosts.append(hostname)
+                                urls.append(value)
+                    
+                    # Update cache entry
+                    cache_entries[entry_name] = {
+                        'hosts': sorted(hosts),
+                        'urls': sorted(urls),
+                        'modificationTime': entry_mtime
+                    }
+                    updated_count += 1
+                    
+                except Exception as e:
+                    log_message(f"Failed to index {entry_name}: {e}")
+                    continue
+        
+        # Update cache metadata
+        cache['storePath'] = store_path
+        cache['entryCount'] = len(cache_entries)
+        cache['latestStoreModificationTime'] = current_store_mtime
+        cache['generatedAt'] = current_time
+        cache['entries'] = cache_entries
+        
+        # Save cache
+        try:
+            with open(URL_INDEX_CACHE_FILE, 'w') as f:
+                json.dump(cache, f)
+            log_message(f"Updated URL index cache: {updated_count} entries updated, {len(entries_to_remove)} removed")
+        except Exception as e:
+            log_message(f"Failed to save URL index cache: {e}")
+        
+        return convert_cache_to_hostname_dict(cache)
     
-    return convert_cache_to_hostname_dict(cache)
+    finally:
+        # Always release the lock
+        release_url_index_lock()
 
 
 def convert_cache_to_hostname_dict(cache: Dict) -> Dict[str, List[str]]:
@@ -598,11 +642,14 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
             # Get URL-based suggestions
             suggested_entries = get_suggestions_for_url(page_url, entries)
             
+            # Check if index is being refreshed
+            url_index_refreshing = is_url_index_refreshing()
+            
             return {
                 "ok": True,
                 "entries": entries,
                 "suggestedEntries": suggested_entries,
-                "urlIndexRefreshing": False
+                "urlIndexRefreshing": url_index_refreshing
             }
         
         elif command == "getEntryDetails":
