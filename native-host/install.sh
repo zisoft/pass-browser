@@ -149,3 +149,21 @@ fi
 echo ""
 echo "   Replace EXTENSION_ID with your actual extension ID"
 echo ""
+
+# Install for Firefox
+echo ""
+echo "Installing for Firefox..."
+FIREFOX_MANIFEST_DIR=""
+
+if [[ "$OS" == "macos" ]]; then
+    FIREFOX_MANIFEST_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts"
+elif [[ "$OS" == "linux" ]]; then
+    FIREFOX_MANIFEST_DIR="$HOME/.mozilla/native-messaging-hosts"
+fi
+
+if [[ -n "$FIREFOX_MANIFEST_DIR" ]]; then
+    mkdir -p "$FIREFOX_MANIFEST_DIR"
+    sed "s|INSTALL_PATH|$INSTALL_DIR|g" "$SCRIPT_DIR/de.zisoft.pass_browser.firefox.json" > "$FIREFOX_MANIFEST_DIR/de.zisoft.pass_browser.json"
+    echo -e "${GREEN}✓${NC} Installed manifest for Firefox: $FIREFOX_MANIFEST_DIR"
+    INSTALLED=true
+fi

@@ -442,3 +442,29 @@ If you encounter issues:
    - Steps to reproduce
    - Error messages from browser console
    - Native host logs (if available)
+
+## Firefox Support
+
+A Firefox version is available in `extension-firefox/`!
+
+### Key Differences:
+- Uses Manifest v2 (Firefox compatibility)
+- Extension ID: `pass-browser@zisoft.de`
+- Same native host, same features
+
+### Quick Start:
+```bash
+# Install native host (includes Firefox)
+cd native-host
+./install.sh
+
+# Load in Firefox
+# 1. Open about:debugging
+# 2. Load Temporary Add-on
+# 3. Select extension-firefox/manifest.json
+```
+
+See [extension-firefox/README.md](extension-firefox/README.md) for details.
+
+**Status**: Ready for testing (not yet tested without Firefox)
+
