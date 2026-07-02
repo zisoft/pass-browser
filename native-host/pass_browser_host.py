@@ -450,17 +450,22 @@ def build_url_index(current_entries: Optional[List[str]] = None) -> Dict[str, Li
             with open(URL_INDEX_CACHE_FILE, 'r') as f:
                 cache_data = json.load(f)
                 
-                # Check if cache is still valid (store hasn't been modified since cache was built)
+                # Check if cache is still valid
                 cached_store_mtime = cache_data.get('latestStoreModificationTime', 0)
+                cached_entry_count = cache_data.get('entryCount', 0)
                 cache_entries = cache_data.get('entries', {})
                 
-                if cached_store_mtime >= current_store_mtime:
+                # Cache is valid if:
+                # 1. Store hasn't been modified since cache was built
+                # 2. Number of entries matches
+                if (cached_store_mtime >= current_store_mtime and 
+                    cached_entry_count == len(current_entries)):
                     # Cache is up-to-date
                     log_message(f"URL index cache is up-to-date ({len(cache_entries)} entries)")
                     cache_valid = True
                     cache = cache_data
                 else:
-                    log_message("URL index cache is outdated, will update modified entries")
+                    log_message(f"URL index cache is outdated (mtime: {cached_store_mtime} vs {current_store_mtime}, count: {cached_entry_count} vs {len(current_entries)})")
                     cache = cache_data
     except Exception as e:
         log_message(f"Failed to load URL index cache: {e}")
