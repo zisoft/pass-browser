@@ -71,12 +71,26 @@ def run_pass(args: List[str], env: Optional[Dict[str, str]] = None) -> str:
     
     # Prepare environment
     cmd_env = os.environ.copy()
+    
+    # Fix PATH to include homebrew (Edge starts with limited PATH)
+    if '/opt/homebrew/bin' not in cmd_env.get('PATH', ''):
+        cmd_env['PATH'] = f"/opt/homebrew/bin:/usr/local/bin:{cmd_env.get('PATH', '/usr/bin:/bin')}"
+    
     if env:
         cmd_env.update(env)
     
     # Set PASSWORD_STORE_DIR if not already set
     if "PASSWORD_STORE_DIR" not in cmd_env:
         cmd_env["PASSWORD_STORE_DIR"] = DEFAULT_STORE_PATH
+    
+    # Ensure GPG can find the agent
+    if "GPG_AGENT_INFO" not in cmd_env:
+        gpg_agent_socket = os.path.expanduser("~/.gnupg/S.gpg-agent")
+        if os.path.exists(gpg_agent_socket):
+            cmd_env["GPG_AGENT_INFO"] = f"{gpg_agent_socket}:0:1"
+    
+    # Set GPG_TTY to allow pinentry
+    cmd_env["GPG_TTY"] = "/dev/tty"
     
     log_message(f"Running: {pass_exec} {' '.join(args)}")
     
@@ -207,30 +221,32 @@ def get_otp_code(entry_name: str) -> Optional[Dict[str, Any]]:
 def list_entries() -> List[str]:
     """List all password entries"""
     try:
-        output = run_pass(["ls"])
+        # Use find command which is more reliable than parsing tree output
+        store_path = os.environ.get('PASSWORD_STORE_DIR', DEFAULT_STORE_PATH)
+        store_path = os.path.expanduser(store_path)
         
-        # Parse the tree output to extract entry names
+        if not os.path.isdir(store_path):
+            log_message(f"Password store not found at: {store_path}")
+            return []
+        
         entries = []
-        lines = output.split('\n')
         
-        for line in lines:
-            # Remove tree characters and colors
-            cleaned = re.sub(r'^[│├└─\s]+', '', line)
-            cleaned = re.sub(r'\x1b\[[0-9;]*m', '', cleaned)  # Remove ANSI colors
-            cleaned = cleaned.strip()
+        # Walk through the password store directory
+        for root, dirs, files in os.walk(store_path):
+            # Skip .git directory
+            if '.git' in dirs:
+                dirs.remove('.git')
             
-            # Skip empty lines and the store path line
-            if not cleaned or cleaned.startswith('Password Store'):
-                continue
-            
-            # Remove .gpg extension if present
-            if cleaned.endswith('.gpg'):
-                cleaned = cleaned[:-4]
-            
-            # Skip directory entries (they don't end with .gpg in the output)
-            if cleaned and not cleaned.endswith('/'):
-                entries.append(cleaned)
+            for file in files:
+                if file.endswith('.gpg'):
+                    # Get the full path relative to store_path
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, store_path)
+                    # Remove .gpg extension
+                    entry_name = rel_path[:-4]
+                    entries.append(entry_name)
         
+        log_message(f"Found {len(entries)} entries")
         return sorted(entries)
     except Exception as e:
         log_message(f"Failed to list entries: {e}")
@@ -316,6 +332,147 @@ def copy_to_clipboard(text: str) -> None:
         raise RuntimeError(f"Failed to copy to clipboard: {str(e)}")
 
 
+def extract_hostname(url_string: str) -> Optional[str]:
+    """Extract normalized hostname from URL string"""
+    if not url_string:
+        return None
+    
+    try:
+        from urllib.parse import urlparse
+        
+        # Add https:// if no protocol
+        if '://' not in url_string:
+            url_string = 'https://' + url_string
+        
+        parsed = urlparse(url_string)
+        if parsed.hostname:
+            hostname = parsed.hostname.lower()
+            # Remove www. prefix
+            if hostname.startswith('www.'):
+                hostname = hostname[4:]
+            return hostname
+    except Exception:
+        pass
+    
+    return None
+
+
+def build_url_index() -> Dict[str, List[str]]:
+    """Build URL index from password store entries"""
+    try:
+        # Load cache if it exists and is recent
+        if URL_INDEX_CACHE_FILE.exists():
+            cache_age = time.time() - URL_INDEX_CACHE_FILE.stat().st_mtime
+            # Cache is valid for 1 hour
+            if cache_age < 3600:
+                with open(URL_INDEX_CACHE_FILE, 'r') as f:
+                    cache = json.load(f)
+                    log_message(f"Loaded URL index cache with {len(cache)} entries")
+                    return cache
+    except Exception as e:
+        log_message(f"Failed to load URL index cache: {e}")
+    
+    # Build new index
+    log_message("Building URL index...")
+    url_index = {}  # hostname -> [entry_names]
+    
+    store_path = os.environ.get('PASSWORD_STORE_DIR', DEFAULT_STORE_PATH)
+    store_path = os.path.expanduser(store_path)
+    
+    if not os.path.isdir(store_path):
+        return url_index
+    
+    # Walk through entries
+    for root, dirs, files in os.walk(store_path):
+        if '.git' in dirs:
+            dirs.remove('.git')
+        
+        for file in files:
+            if file.endswith('.gpg'):
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, store_path)
+                entry_name = rel_path[:-4]
+                
+                try:
+                    # Get entry content
+                    output = run_pass(["show", entry_name])
+                    lines = output.split('\n')
+                    
+                    # Parse URL fields (skip first line which is the password)
+                    for line in lines[1:]:
+                        if ':' not in line:
+                            continue
+                        
+                        parts = line.split(':', 1)
+                        if len(parts) != 2:
+                            continue
+                        
+                        label = parts[0].strip().lower()
+                        value = parts[1].strip()
+                        
+                        # Check if it's a URL field
+                        if any(label.startswith(prefix) for prefix in ['url', 'website', 'site']):
+                            # Extract hostname
+                            hostname = extract_hostname(value)
+                            if hostname:
+                                if hostname not in url_index:
+                                    url_index[hostname] = []
+                                if entry_name not in url_index[hostname]:
+                                    url_index[hostname].append(entry_name)
+                except Exception as e:
+                    log_message(f"Failed to index {entry_name}: {e}")
+                    continue
+    
+    # Save cache
+    try:
+        with open(URL_INDEX_CACHE_FILE, 'w') as f:
+            json.dump(url_index, f)
+        log_message(f"Saved URL index cache with {len(url_index)} hostnames")
+    except Exception as e:
+        log_message(f"Failed to save URL index cache: {e}")
+    
+    return url_index
+
+
+def get_suggestions_for_url(page_url: str, all_entries: List[str]) -> List[str]:
+    """Get password suggestions for a given URL"""
+    if not page_url:
+        return []
+    
+    # Extract hostname from page URL
+    hostname = extract_hostname(page_url)
+    if not hostname:
+        return []
+    
+    log_message(f"Looking for suggestions for hostname: {hostname}")
+    
+    # Try to load URL index
+    url_index = build_url_index()
+    
+    # Find entries for this hostname
+    suggestions = []
+    
+    # Exact match
+    if hostname in url_index:
+        suggestions.extend(url_index[hostname])
+    
+    # Subdomain match (e.g., login.example.com matches example.com)
+    for indexed_host, entries in url_index.items():
+        if hostname.endswith('.' + indexed_host) or indexed_host.endswith('.' + hostname):
+            suggestions.extend(entries)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_suggestions = []
+    for entry in suggestions:
+        if entry not in seen and entry in all_entries:
+            seen.add(entry)
+            unique_suggestions.append(entry)
+    
+    log_message(f"Found {len(unique_suggestions)} suggestions")
+    return unique_suggestions
+
+
 def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
     """Handle incoming message from extension"""
     command = message.get("command")
@@ -327,8 +484,8 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
             entries = list_entries()
             page_url = message.get("pageURL", "")
             
-            # TODO: Implement URL-based suggestions from cache
-            suggested_entries = []
+            # Get URL-based suggestions
+            suggested_entries = get_suggestions_for_url(page_url, entries)
             
             return {
                 "ok": True,
