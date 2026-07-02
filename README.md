@@ -185,7 +185,7 @@ The extension will:
 
 ### Syncing with Git
 
-Click the **sync icon** (🔄) in the extension to pull and push changes to your git remote.
+Click the **sync icon** in the extension to pull and push changes to your git remote.
 
 ## URL Matching
 
@@ -355,27 +355,14 @@ After changing the Python script:
 
 ## Security
 
-- ✅ Extension runs in browser sandbox
-- ✅ No network access required
-- ✅ No telemetry or tracking
-- ✅ Native messaging is restricted to specific extension ID
-- ✅ All password operations go through native `pass` executable
-- ✅ GPG encryption handled by `pass`
+- Extension runs in browser sandbox
+- No network access required
+- No telemetry or tracking
+- Native messaging is restricted to specific extension ID
+- All password operations go through native `pass` executable
+- GPG encryption handled by `pass`
 
 **Note:** The extension requires `nativeMessaging` permission to communicate with the Python host, which in turn executes `pass` commands.
-
-## Comparison to pass-safari
-
-| Feature | pass-safari | pass-browser |
-|---------|-------------|--------------|
-| Platform | macOS only | macOS, Linux, Windows |
-| Browser | Safari | Chrome, Edge, Chromium |
-| Backend | Swift + macOS App | Python script |
-| Installation | Xcode build | Simple script |
-| URL Cache | File-based | File-based |
-| OTP Support | ✅ | ✅ |
-| Autofill | ✅ | ✅ |
-| Git Sync | ✅ | ✅ |
 
 ## License
 
@@ -384,7 +371,7 @@ MIT — see [LICENSE](../LICENSE).
 ## Credits
 
 - Built for [pass](https://www.passwordstore.org/) by Jason A. Donenfeld
-- Password generator based on work by Dania Usman
+- [Password generator](https://github.com/daniausman24-bot/password-generator) by Dania Usman 
 
 
 ## Firefox Support
