@@ -2,26 +2,34 @@
 
 A Chrome/Edge/Chromium extension for the [pass](https://www.passwordstore.org/) standard Unix password manager.
 
-**✅ PRODUCTION READY** - Fully tested and working on macOS with 303 password entries!
-
-Ported from the Safari extension [pass-safari](https://github.com/yourusername/pass-safari).
-
-## 🎉 Current Status
-
-**Version 1.0.0** - All features implemented and tested!
-
-See [TESTING_COMPLETE.md](TESTING_COMPLETE.md) for detailed test results.
 
 ## Features
 
-- 🔐 Manage your pass password store from Chrome/Edge
-- ➕ Create / update / delete entries
-- 🎯 Auto-suggest passwords based on the current URL
-- 🔢 Support for TOTP/OTP codes (requires pass-otp)
-- 🎲 Integrated password generator
-- 🔄 Sync the store with git
-- 🔒 Secure architecture with native messaging
-- 🌍 Cross-platform: Linux, macOS, Windows (where pass is available)
+- Manage your pass password store from Chrome/Edge
+- Create / update / delete entries
+- Auto-suggest passwords based on the current URL
+- Support for TOTP/OTP codes (requires pass-otp)
+- Integrated password generator
+- Sync the store with git
+- Secure architecture with native messaging
+- Cross-platform: Linux, macOS, Windows (where pass is available)
+
+## Screenshots
+
+![Password entries](assets/entries.png)
+Password entries
+
+![Create/edit entry](assets/edit-entry.png)
+Create/edit entry
+
+![Entry details](assets/details.png)
+Entry details
+
+![Entry with OTP](assets/otp.png)
+Entry details with OTP
+
+![Suggestions for current URL](assets/suggestions.png)
+Suggestions for the current URL
 
 ## Architecture
 
@@ -47,31 +55,6 @@ The extension communicates with a native Python script that executes `pass` comm
 - [pass-otp](https://github.com/tadfisher/pass-otp) for OTP/2FA support
 - git (for syncing password store)
 
-### Installation of pass
-
-**macOS:**
-```bash
-brew install pass
-# Optional: OTP support
-brew install pass-otp
-```
-
-**Linux (Debian/Ubuntu):**
-```bash
-sudo apt-get install pass
-# Optional: OTP support
-sudo apt-get install pass-extension-otp
-```
-
-**Linux (Fedora):**
-```bash
-sudo dnf install pass
-```
-
-**Windows:**
-Pass is primarily designed for Unix-like systems. For Windows, consider using:
-- WSL (Windows Subsystem for Linux)
-- Or alternatives like [gopass](https://github.com/gopasspw/gopass)
 
 ## Installation
 
@@ -211,38 +194,14 @@ The extension suggests passwords based on:
 - Subdomain matches  
 - URL fields in password entries
 
-**Supported URL field formats in pass entries:**
-```
-password123
-username: myuser
-url: https://example.com
-url2: https://login.example.com
-website: https://example.com
-site: https://example.com
-```
+For quick access, a `URLIndexCache.json` file is created in cache directory `~/.cache/pass-safari`. On the first run this may take some time, so please be patient. On subsequent runs only the changed entries are used to update the cache file, which is much faster. All fields from the password entries starting with one of:
 
-All fields starting with `url`, `website`, or `site` are indexed for matching.
+- `url`
+- `website`
+- `site`
 
-## Password Entry Format
+are stored in the cache. So you can easily use multiple URLs in one password entry like `url:`, `url2:`, etc.
 
-pass-browser recognizes the standard pass format:
-
-```
-<password>
-username: <username>
-url: <url>
-<custom-field>: <value>
-<notes>
-```
-
-**Example:**
-```
-MySecurePassword123!
-username: john.doe
-url: https://example.com
-email: john@example.com
-This is a note about this password
-```
 
 ## OTP/2FA Support
 
@@ -424,24 +383,9 @@ MIT — see [LICENSE](../LICENSE).
 
 ## Credits
 
-- Ported from [pass-safari](https://github.com/yourusername/pass-safari)
 - Built for [pass](https://www.passwordstore.org/) by Jason A. Donenfeld
 - Password generator based on work by Dania Usman
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-If you encounter issues:
-1. Check the Troubleshooting section above
-2. Look for existing issues on GitHub
-3. Create a new issue with:
-   - Your OS and browser version
-   - Steps to reproduce
-   - Error messages from browser console
-   - Native host logs (if available)
 
 ## Firefox Support
 
@@ -466,5 +410,4 @@ cd native-host
 
 See [extension-firefox/README.md](extension-firefox/README.md) for details.
 
-**Status**: Ready for testing (not yet tested without Firefox)
 

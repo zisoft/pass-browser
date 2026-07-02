@@ -110,7 +110,7 @@ input[type=checkbox] {
 .icon-text-text input {
   flex: 1 1 auto;
   font-size: 0.9em;
-  margin-top: 0.5em;
+  padding: 0.2em;
 }
 
 .header-title {
@@ -607,6 +607,7 @@ code {
 .edit-value input {
   flex: 1 1 auto;
   font-size: 0.8em;
+  padding: 0.2em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -626,7 +627,6 @@ code {
 .hint pre {
   display: inline-block;
   margin: 0;
-  font-size: 1.2em;
 }
 
 .edit-textarea {
