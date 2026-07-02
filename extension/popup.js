@@ -779,8 +779,9 @@ function createEntryIcon(entry,icon_id,div,hint_text,clickHandler) {
   let icon_svg = null;
   const svg = document.getElementById(icon_id);
 
-  if(!svg)
+  if(!svg) {
     return;
+  }
 
   icon_svg = svg.cloneNode(true);
   icon_svg.id = null;
@@ -790,7 +791,10 @@ function createEntryIcon(entry,icon_id,div,hint_text,clickHandler) {
   icon_div.append(icon_svg);
   icon_div.dataset.entry = entry;
   icon_div.title = hint_text;
-  icon_div.addEventListener("click", clickHandler);
+  icon_div.addEventListener("click", function(e) {
+    e.stopPropagation();
+    clickHandler.call(this, e);
+  });
   div.append(icon_div);
 }
 
@@ -822,11 +826,41 @@ function createEntry(entry) {
   const entry_buttons_div = document.createElement("div");
   entry_buttons_div.className = "entry-buttons";
 
-  createEntryIcon(entry,"icon-user",entry_buttons_div,"Copy username",onCopyUsernameClicked);
-  createEntryIcon(entry,"icon-password",entry_buttons_div,"Copy password",onCopyPasswordClick);
-  createEntryIcon(entry,"icon-link",entry_buttons_div,"Open URL",openURLClicked);
-  createEntryIcon(entry,"icon-show",entry_buttons_div,"Show entry",onShowEntryClick);
-  createEntryIcon(entry,"icon-edit",entry_buttons_div,"Edit entry",onEditEntryClick);
+  createEntryIcon(entry,"icon-user",entry_buttons_div,"Copy username", async function() {
+    const entry = this.dataset.entry;
+    if(!entry) return;
+    if(selectedEntry !== entry || !selectedEntryDetails)
+      await getEntryData(entry);
+    onCopyFieldClick("username");
+  });
+  createEntryIcon(entry,"icon-password",entry_buttons_div,"Copy password", async function() {
+    const entry = this.dataset.entry;
+    if(!entry) return;
+    if(selectedEntry !== entry || !selectedEntryDetails)
+      await getEntryData(entry);
+    onCopyFieldClick("password");
+  });
+  createEntryIcon(entry,"icon-link",entry_buttons_div,"Open URL", async function() {
+    const entry = this.dataset.entry;
+    if(!entry) return;
+    if(selectedEntry !== entry || !selectedEntryDetails)
+      await getEntryData(entry);
+    onOpenURLClick();
+  });
+  createEntryIcon(entry,"icon-show",entry_buttons_div,"Show entry", async function() {
+    const entry = this.dataset.entry;
+    if(!entry) return;
+    if(selectedEntry !== entry || !selectedEntryDetails)
+      await getEntryData(entry);
+    renderEntryDetails(selectedEntryDetails);
+  });
+  createEntryIcon(entry,"icon-edit",entry_buttons_div,"Edit entry", async function() {
+    const entry = this.dataset.entry;
+    if(!entry) return;
+    if(selectedEntry !== entry || !selectedEntryDetails)
+      await getEntryData(entry);
+    openEditPanel();
+  });
 
   item.append(entry_buttons_div);
   return item;
