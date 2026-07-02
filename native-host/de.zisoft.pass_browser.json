@@ -1,0 +1,9 @@
+{
+  "name": "de.zisoft.pass_browser",
+  "description": "pass password manager native messaging host",
+  "path": "INSTALL_PATH/pass_browser_host.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://EXTENSION_ID/"
+  ]
+}
