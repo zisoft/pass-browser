@@ -52,10 +52,12 @@ echo -e "${GREEN}✓${NC} Detected OS: $OS"
 INSTALL_DIR="$HOME/.local/share/pass-browser"
 mkdir -p "$INSTALL_DIR"
 
-# Copy the host script
+# Copy the host script and wrapper
 echo "Installing native host to $INSTALL_DIR..."
 cp "$SCRIPT_DIR/pass_browser_host.py" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/pass_browser_host_wrapper.sh" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/pass_browser_host.py"
+chmod +x "$INSTALL_DIR/pass_browser_host_wrapper.sh"
 
 echo -e "${GREEN}✓${NC} Installed native host script"
 
