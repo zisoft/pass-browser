@@ -149,12 +149,9 @@ def parse_pass_entry(output: str, entry_name: str) -> Dict[str, Any]:
             
             if key == "username" or key == "user" or key == "login":
                 username = value
-            elif key in ["url", "website", "site", "url2", "url3"]:
+            elif key in ["url", "website", "site"]:
                 if not url:  # Use first URL found
                     url = value
-                # Also add to fields for additional URLs
-                if value:
-                    fields.append({"label": match.group(1).strip(), "value": value})
             else:
                 if value:
                     fields.append({"label": match.group(1).strip(), "value": value})
