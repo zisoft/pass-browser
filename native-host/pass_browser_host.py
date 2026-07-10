@@ -250,7 +250,7 @@ def list_entries() -> List[str]:
         return []
 
 
-def update_entry(entry_name: str, content: str) -> None:
+def update_entry(entry_name: str, content: str, new_entry_name) -> None:
     """Create or update a pass entry"""
     try:
         # Use pass insert with --multiline and --force (to overwrite if exists)
@@ -268,6 +268,25 @@ def update_entry(entry_name: str, content: str) -> None:
         if process.returncode != 0:
             error_msg = stderr.strip() or stdout.strip() or "Command failed"
             raise RuntimeError(f"Failed to update entry: {error_msg}")
+
+        if entry_name != new_entry_name:
+            # Use pass rename
+            process = subprocess.Popen(
+                [find_pass_executable(), "rename", entry_name, new_entry_name],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env={**os.environ, "PASSWORD_STORE_DIR": DEFAULT_STORE_PATH}
+            )
+            
+            stdout, stderr = process.communicate(input=content, timeout=30)
+            
+            if process.returncode != 0:
+                error_msg = stderr.strip() or stdout.strip() or "Command failed"
+                raise RuntimeError(f"Failed to rename entry: {error_msg}")
+
+
     except subprocess.TimeoutExpired:
         raise RuntimeError("pass command timed out")
     except Exception as e:
@@ -700,13 +719,14 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
         elif command == "updateEntry":
             entry_name = message.get("entry")
             content = message.get("content")
+            new_entry_name = message.get("new_name")
             
             if not entry_name:
                 return {"ok": False, "error": "No entry specified"}
             if not content:
                 return {"ok": False, "error": "No content provided"}
             
-            update_entry(entry_name, content)
+            update_entry(entry_name, content, new_entry_name)
             
             return {
                 "ok": True,
