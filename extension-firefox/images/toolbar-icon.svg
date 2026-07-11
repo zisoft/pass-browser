@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;">
-    <path d="M2.586,17.414C2.211,17.789 2,18.298 2,18.828L2,21C2,21.549 2.451,22 3,22L6,22C6.549,22 7,21.549 7,21L7,20C7,19.451 7.451,19 8,19L9,19C9.549,19 10,18.549 10,18L10,17C10,16.451 10.451,16 11,16L11.172,16C11.702,16 12.211,15.789 12.586,15.414L13.4,14.6C14.087,14.839 14.81,14.962 15.538,14.962C19.104,14.962 22.038,12.028 22.038,8.462C22.038,4.896 19.104,1.962 15.538,1.962C11.972,1.962 9.038,4.896 9.038,8.462C9.038,9.19 9.161,9.913 9.4,10.6L2.586,17.414Z" style="fill:none;fill-rule:nonzero;stroke:black;stroke-width:2px;"/>
-    <circle cx="16.5" cy="7.5" r="0.5" style="stroke:black;stroke-width:2px;"/>
-</svg>

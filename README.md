@@ -1,11 +1,11 @@
 # pass-browser
 
-A Chrome/Edge/Chromium extension for the [pass](https://www.passwordstore.org/) standard Unix password manager.
+A browser extension for Chrome, Edge, Chromium, and Firefox that integrates the [pass](https://www.passwordstore.org/) standard Unix password manager.
 
 
 ## Features
 
-- Manage your pass password store from Chrome/Edge
+- Manage your pass password store from your browser
 - Create / update / delete entries
 - Auto-suggest passwords based on the current URL
 - Support for TOTP/OTP codes (requires pass-otp)
@@ -49,7 +49,7 @@ The extension communicates with a native Python script that executes `pass` comm
 ### All Platforms
 - [pass](https://www.passwordstore.org/) password manager installed and configured
 - Python 3.6 or later
-- Chrome, Chromium, or Edge browser
+- Chrome, Chromium, Edge, or Firefox browser
 
 ### Optional
 - [pass-otp](https://github.com/tadfisher/pass-otp) for OTP/2FA support
@@ -376,25 +376,121 @@ MIT — see [LICENSE](../LICENSE).
 
 ## Firefox Support
 
-A Firefox version is available in `extension-firefox/`!
+The extension works in Firefox with a different manifest file!
 
-### Key Differences:
-- Uses Manifest v2 (Firefox compatibility)
+### Key Differences
+
+Firefox requires Manifest v2 (doesn't fully support v3 yet):
+- `browser_action` instead of `action`
+- `background.scripts` instead of `background.service_worker`
+- `permissions` includes `<all_urls>` (no separate `host_permissions`)
+- Added `browser_specific_settings.gecko` for Firefox Add-ons
 - Extension ID: `pass-browser@zisoft.de`
-- Same native host, same features
 
-### Quick Start:
+**Good news:** The extension code is already compatible! It uses the `browser` API which works in both Firefox and Chrome/Edge.
+
+### Installation for Firefox
+
+#### 1. Install Native Host
+
+Same as Chrome/Edge (includes Firefox support):
+
 ```bash
-# Install native host (includes Firefox)
 cd native-host
 ./install.sh
-
-# Load in Firefox
-# 1. Open about:debugging
-# 2. Load Temporary Add-on
-# 3. Select extension-firefox/manifest.json
 ```
 
-See [extension-firefox/README.md](extension-firefox/README.md) for details.
+This installs the native messaging manifest to:
+- **macOS**: `~/Library/Application Support/Mozilla/NativeMessagingHosts/`
+- **Linux**: `~/.mozilla/native-messaging-hosts/`
+
+#### 2. Use Firefox Manifest
+
+Copy the Firefox manifest into the extension directory:
+
+```bash
+cp manifest-firefox.json extension/manifest.json
+```
+
+**Important:** This overwrites the Chrome/Edge manifest. If you need both browsers:
+- Keep separate copies of the extension directory, or
+- Swap the manifest files as needed, or
+- Load from different directories
+
+#### 3. Load Extension in Firefox
+
+**For Testing (Temporary):**
+
+1. Open Firefox
+2. Navigate to `about:debugging`
+3. Click "This Firefox"
+4. Click "Load Temporary Add-on..."
+5. Select `manifest.json` from the `extension` directory
+6. Extension ID will be `pass-browser@zisoft.de`
+
+**Note:** Temporary extensions are removed when Firefox closes.
+
+**For Permanent Installation:**
+
+You need to sign the extension via [Mozilla Add-ons (AMO)](https://addons.mozilla.org/) or use Firefox Developer Edition/Nightly with `xpinstall.signatures.required` set to `false`.
+
+#### 4. Verify
+
+1. Click the extension icon
+2. Your password entries should load
+3. Navigate to a website with saved passwords
+4. Badge should show number of suggestions
+
+### Native Messaging Differences
+
+The native messaging manifest for Firefox uses `allowed_extensions` instead of `allowed_origins`:
+
+```json
+{
+  "name": "de.zisoft.pass_browser",
+  "description": "Pass Browser Native Host",
+  "path": "/path/to/pass_browser_host.py",
+  "type": "stdio",
+  "allowed_extensions": [ "pass-browser@zisoft.de" ]
+}
+```
+
+The `install.sh` script already creates both versions automatically.
+
+### Compatibility
+
+- **Minimum Firefox Version**: 109.0
+- **Works with**: Same Python host as Chrome/Edge
+- **Same features**: All functionality identical to Chrome/Edge version
+
+### Troubleshooting Firefox
+
+**"Unable to connect to native messaging host":**
+
+1. Check if the Firefox manifest exists:
+   ```bash
+   # macOS:
+   ls ~/Library/Application\ Support/Mozilla/NativeMessagingHosts/de.zisoft.pass_browser.json
+   
+   # Linux:
+   ls ~/.mozilla/native-messaging-hosts/de.zisoft.pass_browser.json
+   ```
+
+2. Check the manifest content:
+   ```bash
+   cat ~/Library/Application\ Support/Mozilla/NativeMessagingHosts/de.zisoft.pass_browser.json
+   ```
+   
+   Should contain `"allowed_extensions": [ "pass-browser@zisoft.de" ]`
+
+3. Check extension console:
+   - Go to `about:debugging`
+   - Click "Inspect" next to your extension
+   - Check Console tab for errors
+
+4. Test native host manually:
+   ```bash
+   echo '{"command":"listEntries","pageURL":""}' | python3 ~/.local/share/pass-browser/pass_browser_host.py
+   ```
 
 
