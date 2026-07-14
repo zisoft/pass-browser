@@ -42,7 +42,8 @@ browser.runtime.onMessage.addListener((request, sender) => {
 function setBadgeText(text, tabId) {
   if (typeof browser !== 'undefined' && browser.action) {
     browser.action.setBadgeText({ text: text, tabId: tabId });
-    browser.action.setBadgeBackgroundColor({ color: "#FF0000" }); // Optional: Hintergrundfarbe (z.B. Rot)
+    browser.action.setBadgeBackgroundColor({ color: "#2563eb" });
+    browser.action.setBadgeTextColor({ color: "#ffffff" });
   }
   else if (typeof chrome !== 'undefined' && chrome.action) {
     chrome.action.setBadgeText({ text: text, tabId: tabId });
