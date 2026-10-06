@@ -9,7 +9,7 @@ function handleUrlChange(url, tabId) {
 
   if (!url) return;
 
-  // Ignoriere Safari-interne Seiten (z.B. Favoriten/Leerer Tab)
+  // ignore internal pages
   if (url.startsWith('favorites://') || url.startsWith('safari-')) {
     return;
   }

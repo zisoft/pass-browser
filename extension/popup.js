@@ -1495,7 +1495,7 @@ async function sendMessageToActiveTab(message) {
   const activeTab = await refreshActiveTabContext();
 
   if (!activeTab?.id) {
-    throw new Error("Unable to find the active Safari tab.");
+    throw new Error("Unable to find the active browser tab.");
   }
 
   return sendMessageToTab(activeTab.id, message);
